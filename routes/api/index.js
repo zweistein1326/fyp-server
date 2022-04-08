@@ -179,4 +179,6 @@ let AwesomeCoin = new Blockchain();
 let AwesomeUsers = new Users();
 let AwesomeCredentials = new Credentials();
 
+console.log(AwesomeUsers, AwesomeCoin, AwesomeCredentials)
+
 module.exports = router;
