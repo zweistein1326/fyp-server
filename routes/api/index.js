@@ -1,6 +1,7 @@
+const fs = require('fs');
 const rsa = require('js-crypto-rsa');
 const router = require('express').Router();
-const {addFile, encrypt} = require('./helperFunctions')
+const {addFile, encrypt, decrypt} = require('./helperFunctions')
 const { Blockchain, Users, User, Credential, Credentials } = require('../../ssidBlockchain');
 
 /* --------------------------API Endpoints-------------------------- */
@@ -11,7 +12,6 @@ router.get('/', async(req,res,next)=>{
 
 // * Register
 router.post('/register', async (req, res, next) => {
-    console.log(req.body)
     const {username, walletAddress} = req.body;
 
     rsa.generateKey(2048).then(async(key)=>{
@@ -34,19 +34,17 @@ router.post('/register', async (req, res, next) => {
 
 // * Login
 router.post('/login', async (req, res, next) => {
-    const {username, walletAddress, privateKey} = req.body;
-    const user = AwesomeUsers.getUserByUsername(username);
-    console.log(AwesomeUsers, user)
+    const {username, walletAddress, secretMessage} = req.body;
+    try{
+        const user = await AwesomeUsers.getUserByUsername(username);
 
-    if(user){
-        // const encryptedTest = await encrypt(loginTest, publicJwk); // replace with user.publicKey
-        if(1==1){
+        if(decrypt(secretMessage, user.publicKey)==="SecretLoginKey"){
             return res.status(200).json({user, success:true});
         }
-        return res.status(200).json({success:false});
+        return res.status(200).json({message:'Incorrect Private Key',success:false});
     }
-    else{
-        return res.status(200).json({success:false});
+    catch(e){
+        return res.status(200).json({message:e.message, success:false})
     }
 })
 
@@ -79,56 +77,60 @@ router.get('/getFilesByUser',async(req,res,next)=>{
 // * Upload Document
 router.post('/upload', async (req, res, next) => {
     const { senderAddress } = req.body;
-    let fileObj = {};
     let fileSend = {};
 
-    if (req.files.inputFile) {
-        const file = req.files.inputFile;
-        const fileName = file.name;
-        const filePath = __dirname + "/img/" + fileName;
-
-        file.mv(filePath, async (err) => {
-            if (err) {
-                return res.status(500).send(err);
-            }
-            const fileHash = await addFile(fileName, filePath);
-            // fs.unlink(filePath, (err) => {
-            //     if (err) {
-            //         console.log("Error: Unable to delete file", err);
-            //     }
-            // });
-            fileObj = { file: file,name: fileName,path: filePath,hash: fileHash }
-
-            const assetHash = fileHash.toString();
-            const metadataUrl = `https://ipfs.io/ipfs/${assetHash}`
-
-            try {
-                const user = await AwesomeUsers.getUserById(senderAddress)
-
-                if (process.platform === "darwin") {
-                    fileSend = { name: fileName, metadataUrl, assetHash }
+    try{
+        if (req.files) {
+            const file = req.files.inputFile;
+            const fileName = file.name;
+            const filePath = __dirname + "/upload/" + fileName;
+    
+            file.mv(filePath, async (err) => {
+                if (err) {
+                    return res.status(500).send(err);
                 }
-                else {
-                    fileSend = { name: fileName, metadataUrl, assetHash }
+                
+                const fileHash = await addFile(fileName, filePath);
+                fs.unlink(filePath, (err) => {
+                    if (err) {
+                        console.log("Error: Unable to delete file", err);
+                    }
+                });
+                const assetHash = fileHash.toString();
+                const metadataUrl = `https://ipfs.io/ipfs/${assetHash}`
+                try {
+                    const user = await AwesomeUsers.getUserById(senderAddress)
+                    // if (process.platform === "darwin") {
+                    //     fileSend = { name: fileName, metadataUrl, assetHash }
+                    // }
+                    // else {
+                    //     fileSend = { name: fileName, metadataUrl, assetHash }
+                    // }
+                    const encryptedAssetHash = await encrypt(assetHash, user.publicKey)
+                    const encryptedMetadataUrl = await encrypt(metadataUrl, user.publicKey)
+
+                    fileSend = { name: fileName, encryptedMetadataUrl, encryptedAssetHash }
+
+                    const credential = new Credential(AwesomeCredentials.credentials.length, fileSend, senderAddress);
+                    const tx = AwesomeCredentials.addCredential(credential); // Add credential to list of all credentials
+
+                    user.addCredential(credential.id); // Add credentialId to user credentials
+                    AwesomeCoin.addTransaction(tx);
+                    return res.json({credential, success:true});
                 }
-
-                const encryptedFile = await encrypt(assetHash, user.publicKey)
-                const credential = new Credential(AwesomeCredentials.credentials.length, encryptedFile, senderAddress);
-                console.log(credential)
-                const tx = AwesomeCredentials.addCredential(credential); // Add credential to list of all credentials
-
-                user.addCredential(credential.id); // Add credentialId to user credentials
-                AwesomeCoin.addTransaction(tx);
-                return res.json({credential: fileSend, success:true});
-            }
-            catch (e) {
-                return res.json({message:e.message, success: false});
-            }
-        })
+                catch (e) {
+                    return res.json({message:e.message, success: false});
+                }
+            })
+        }
+        else{
+            return res.status(200).json({message: 'Please upload a file', success: false});
+        }
     }
-    else{
-        return res.status(200).json({message: 'Please upload a file', success: false});
+    catch(e){
+        return res.json({message:e.message, success: false});
     }
+    
 })
 
 // * Fetch Credential By Id
@@ -177,13 +179,33 @@ router.post('/transfer', async (req, res, next) => {
     }
 })
 
+// * Revoke Credential
+router.get('/revoke', async(req,res,next)=>{
+    const {credentialId, senderAddress, reason} = req.body;
+
+    try{
+        const credential = await AwesomeCredentials.getCredentialById(credentialId);
+        const ownerId = credential.owner;
+        const user = await AwesomeUsers.getUserById(senderAddress)
+        if(ownerId == senderAddress){
+            credential.revokeCredential(reason)
+            const revokedCredential = await AwesomeCredentials.getCredentialById(credentialId);
+            return res.status(200).json({credential:revokedCredential, success:true})
+        }
+        else{
+            return res.status(200).json({message:'User does not have the correct permissions', success:false})
+        }
+    }
+    catch(e){
+        return res.status(200).json({message:e.message, success:false})
+    }
+})
 // TODO * Selective Disclosure
+
 
 // * Start Blockchain and other storage units
 let AwesomeCoin = new Blockchain();
 let AwesomeUsers = new Users();
 let AwesomeCredentials = new Credentials();
-
-console.log(AwesomeUsers, AwesomeCoin, AwesomeCredentials)
 
 module.exports = router;

@@ -11,13 +11,13 @@ class Transaction{
 }
 
 class Credential{
-    constructor(id, data, creator){
+    constructor(id, data, createdBy){
         this.id = id;
-        this.createBy = creator;
+        this.createdBy = createdBy;
         this.data = data;
-        this.owner = creator;
+        this.owner = createdBy;
         this.ownershipHistory = [];
-        this.revocationStatus = false;
+        this.revocationStatus = {valid:true, reason:null};
         this.createdAt = Date.now();
     }
 
@@ -26,8 +26,9 @@ class Credential{
         this.ownershipHistory.push(transfer);
     }
 
-    revokeCredential(){
-        this.revocationStatus = true;
+    revokeCredential(reason){
+        this.revocationStatus.valid = false;
+        this.revocationStatus.reason = reason; 
     }
 
     transfer(from, to, encryptedCredentialData){
@@ -53,7 +54,7 @@ class Credentials{
         // Check if credential can be safely appended and isn't malicious
         this.credentials.push(credential);
         const transaction = new Transaction(`${credential.id} added`, credential.owner, '0');
-            return transaction;
+        return transaction;
     }
 
     // Fetch credential by credentialID -> No transaction required
@@ -138,7 +139,10 @@ class Users{
     getUserByUsername(username){
         console.log(this.users, username)
         const user = this.users.find((user)=>user.username==username);
-        return user;
+        if(user){
+            return user
+        }
+        throw Error(`${username} not found`)
     }
 }
 

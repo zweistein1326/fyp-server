@@ -28,4 +28,16 @@ async function encrypt(text, publicKey) {
         return encryptedText;
 }
 
-module.exports = {encrypt, addFile}
+
+async function decrypt(encrypted, key) {
+    decryptedText = ''
+    await rsa.decrypt(
+        encrypted,
+        key,
+        'SHA-256',
+      ).then((decrypted) => {
+          decryptedText= decrypted
+      });
+      return Buffer.from(decryptedText).toString()
+}
+module.exports = {encrypt, decrypt, addFile}
