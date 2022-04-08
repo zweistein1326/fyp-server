@@ -9,7 +9,6 @@ if (process.env.NODE_ENV !== "production") {
 const hostname = '0.0.0.0';
 const port = process.env.PORT || 8000;
 
-app.use(require('./routes'));
 app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
     res.header('Access-Control_Allow-Headers', "x-access token, Origin, Content-Type, Accept");
@@ -19,7 +18,8 @@ app.use((req, res, next) => {
 app.use(fileUpload());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(cors({origin:new URL(hostname), credentials:true}));
+app.use(cors());
+app.use(require('./routes'));
 
 app.listen(port, hostname, () => {
     console.log(`Server running at Port ${port}`);

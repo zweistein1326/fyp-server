@@ -11,6 +11,7 @@ router.get('/', async(req,res,next)=>{
 
 // * Register
 router.post('/register', async (req, res, next) => {
+    console.log(req.body)
     const {username, walletAddress} = req.body;
 
     rsa.generateKey(2048).then(async(key)=>{
