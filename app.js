@@ -22,6 +22,9 @@ app.use((req, res, next) => {
 })
 
 app.use(require('./routes'));
+app.get('/',(req,res,next)=>{
+    return res.json(`Server running at http://${hostname}:${port}/`)
+})
 
 app.listen(port, hostname, () => {
     console.log(`Server running at http://${hostname}:${port}/`);
