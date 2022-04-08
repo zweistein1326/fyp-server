@@ -19,11 +19,7 @@ app.use((req, res, next) => {
 app.use(fileUpload());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(cors());
-
-app.get('/',(req,res,next)=>{
-    return res.send(`Server running at Port ${port}`)
-})
+app.use(cors({origin:new URL(hostname), credentials:true}));
 
 app.listen(port, hostname, () => {
     console.log(`Server running at Port ${port}`);
