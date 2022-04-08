@@ -5,6 +5,10 @@ const { Blockchain, Users, User, Credential, Credentials } = require('../../ssid
 
 /* --------------------------API Endpoints-------------------------- */
 
+router.get('/', async(req,res,next)=>{
+    return res.send('Server running')
+})
+
 // * Register
 router.post('/register', async (req, res, next) => {
     const {username, walletAddress} = req.body;
