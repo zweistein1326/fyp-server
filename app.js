@@ -6,7 +6,7 @@ const cors = require('cors');
 if (process.env.NODE_ENV !== "production") {
     require('dotenv').config()
 }
-const hostname = '127.0.0.1';
+const hostname = 'https://fyp21050-server.herokuapp.com/';
 const port = process.env.PORT || 8000;
 
 app.use(fileUpload());
