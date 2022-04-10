@@ -84,7 +84,6 @@ router.post('/upload', async (req, res, next) => {
             const file = req.files.inputFile;
             const fileName = file.name;
             const filePath = __dirname + "/upload/" + fileName;
-    
             file.mv(filePath, async (err) => {
                 if (err) {
                     return res.status(500).send(err);
@@ -200,8 +199,8 @@ router.get('/revoke', async(req,res,next)=>{
         return res.status(200).json({message:e.message, success:false})
     }
 })
-// TODO * Selective Disclosure
 
+// TODO * Selective Disclosure
 
 // * Start Blockchain and other storage units
 let AwesomeCoin = new Blockchain();
