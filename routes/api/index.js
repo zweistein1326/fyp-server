@@ -90,11 +90,11 @@ router.post('/upload', async (req, res, next) => {
                 }
                 
                 const fileHash = await addFile(fileName, filePath);
-                fs.unlink(filePath, (err) => {
-                    if (err) {
-                        console.log("Error: Unable to delete file", err);
-                    }
-                });
+                // fs.unlink(filePath, (err) => {
+                //     if (err) {
+                //         console.log("Error: Unable to delete file", err);
+                //     }
+                // });
                 const assetHash = fileHash.toString();
                 const metadataUrl = `https://ipfs.io/ipfs/${assetHash}`
                 try {
