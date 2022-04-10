@@ -83,18 +83,18 @@ router.post('/upload', async (req, res, next) => {
         if (req.files) {
             const file = req.files.inputFile;
             const fileName = file.name;
-            const filePath = __dirname + "/upload/" + fileName;
+            const filePath = __dirname + fileName;
             file.mv(filePath, async (err) => {
                 if (err) {
                     return res.status(500).send(err);
                 }
                 
                 const fileHash = await addFile(fileName, filePath);
-                // fs.unlink(filePath, (err) => {
-                //     if (err) {
-                //         console.log("Error: Unable to delete file", err);
-                //     }
-                // });
+                fs.unlink(filePath, (err) => {
+                    if (err) {
+                        console.log("Error: Unable to delete file", err);
+                    }
+                });
                 const assetHash = fileHash.toString();
                 const metadataUrl = `https://ipfs.io/ipfs/${assetHash}`
                 try {
