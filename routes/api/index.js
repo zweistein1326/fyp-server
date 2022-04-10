@@ -99,12 +99,7 @@ router.post('/upload', async (req, res, next) => {
                 const metadataUrl = `https://ipfs.io/ipfs/${assetHash}`
                 try {
                     const user = await AwesomeUsers.getUserById(senderAddress)
-                    // if (process.platform === "darwin") {
-                    //     fileSend = { name: fileName, metadataUrl, assetHash }
-                    // }
-                    // else {
-                    //     fileSend = { name: fileName, metadataUrl, assetHash }
-                    // }
+        
                     const encryptedAssetHash = await encrypt(assetHash, user.publicKey)
                     const encryptedMetadataUrl = await encrypt(metadataUrl, user.publicKey)
 
@@ -159,7 +154,8 @@ router.post('/transfer', async (req, res, next) => {
                     let encryptedCredentialData = credential.data;
                     const tx = credential.transfer(toUser, fromUser, encryptedCredentialData);
                     AwesomeCoin.addTransaction(tx);
-                    return res.status(200).json({credential, success:'true'})
+                    const transferredCredential = await AwesomeCredentials.credentials[credentialId];
+                    return res.status(200).json({credential: transferredCredential, success:'true'})
                 }
                 else{
                     return res.status(200).json({message:`${fromAddress} does not exist`, success:false})
