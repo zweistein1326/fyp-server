@@ -152,7 +152,7 @@ router.post('/transfer', async (req, res, next) => {
             if(credential.owner == fromAddress){
                 if(toUser){
                     let encryptedCredentialData = credential.data;
-                    const tx = credential.transfer(toUser, fromUser, encryptedCredentialData);
+                    const tx = credential.transfer(fromUser, toUser, encryptedCredentialData);
                     AwesomeCoin.addTransaction(tx);
                     const transferredCredential = await AwesomeCredentials.credentials[credentialId];
                     return res.status(200).json({credential: transferredCredential, success:'true'})
@@ -175,7 +175,7 @@ router.post('/transfer', async (req, res, next) => {
 })
 
 // * Revoke Credential
-router.get('/revoke', async(req,res,next)=>{
+router.post('/revoke', async(req,res,next)=>{
     const {credentialId, senderAddress, reason} = req.body;
 
     try{
@@ -196,6 +196,19 @@ router.get('/revoke', async(req,res,next)=>{
     }
 })
 
+router.post('/addViewer', async(req,res,next)=>{
+    const {credentialId, viewerId, senderId} = req.body;
+
+    try{
+        const credential = AwesomeCredentials.getCredentialById(credentialId);
+        if(credential.owner == senderId){
+            credential.viewers.append(viewerId)
+        }
+    }
+    catch(e){
+        return res.status(200).json({message:e.message, success:false})
+    }
+})
 // TODO * Selective Disclosure
 
 // * Start Blockchain and other storage units

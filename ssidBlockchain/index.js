@@ -32,6 +32,7 @@ class Credential{
     }
 
     transfer(from, to, encryptedCredentialData){
+        console.log('here')
         to.addCredential(this.id);
         this.owner = to.id;
         this.data = encryptedCredentialData
